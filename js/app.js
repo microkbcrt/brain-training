@@ -17,6 +17,10 @@ window.Brain = window.Brain || {};
     mount(B.renderSelect());
   };
 
+  B.goSettings = function () {
+    mount(B.renderSettings());
+  };
+
   B.goGame = function (game) {
     const container = document.createElement('div');
     container.className = 'screen game-screen';
@@ -32,6 +36,7 @@ window.Brain = window.Brain || {};
 
   B.init = function () {
     B.root = document.getElementById('app');
+    B.loadSettings();
     // 首次用户交互时解锁音频（浏览器自动播放策略）
     document.addEventListener('pointerdown', function onFirst() {
       if (B.Sound) B.Sound.unlock();

@@ -75,17 +75,19 @@ window.Brain = window.Brain || {};
       timers = [];
     }
 
-    // ---- 3 秒倒计时 ----
+    // ---- 倒计时（秒数由设置决定，0 表示直接开始） ----
     function showCountdown() {
+      const steps = B.countdownSteps(B.getCountdown());
+      if (!steps.length) { startGame(); return; }
       container.className = 'screen countdown-screen';
-      container.innerHTML = '<div class="countdown-number" id="cdNum">3</div>';
+      container.innerHTML = '<div class="countdown-number" id="cdNum">' + steps[0] + '</div>';
       const numEl = container.querySelector('#cdNum');
-      let n = 3;
+      let i = 0;
       B.Sound.countdownTick();
       function tick() {
-        if (n > 1) {
-          n--;
-          numEl.textContent = n;
+        i++;
+        if (i < steps.length) {
+          numEl.textContent = steps[i];
           numEl.style.animation = 'none';
           void numEl.offsetWidth;
           numEl.style.animation = '';

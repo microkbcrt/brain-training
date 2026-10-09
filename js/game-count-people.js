@@ -388,7 +388,7 @@ window.Brain = window.Brain || {};
       setTitle('请记住人数');
       renderInitial(round.initial);
 
-      runCountdown(3, function () {
+      runCountdown(B.getCountdown(), function () {
         dropHouse(function () {
           later(function () { runEvents(round.events); }, 2000);
         });
@@ -492,15 +492,17 @@ window.Brain = window.Brain || {};
 
     // ---------- 启动 ----------
     function showCountdown() {
+      const steps = B.countdownSteps(B.getCountdown());
+      if (!steps.length) { startGame(); return; }
       container.className = 'screen countdown-screen';
-      container.innerHTML = '<div class="countdown-number" id="cdNum">3</div>';
+      container.innerHTML = '<div class="countdown-number" id="cdNum">' + steps[0] + '</div>';
       const numEl = container.querySelector('#cdNum');
-      let n = 3;
+      let i = 0;
       B.Sound.countdownTick();
       function tick() {
-        if (n > 1) {
-          n--;
-          numEl.textContent = n;
+        i++;
+        if (i < steps.length) {
+          numEl.textContent = steps[i];
           numEl.style.animation = 'none';
           void numEl.offsetWidth;
           numEl.style.animation = '';

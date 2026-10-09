@@ -86,6 +86,48 @@ body {
 @keyframes bob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
 .logo h1 { font-size: 42px; letter-spacing: .12em; }
 .tagline { color: var(--ink-soft); font-size: 15px; letter-spacing: .08em; }
+.gear-btn {
+  position: absolute;
+  top: calc(12px + env(safe-area-inset-top, 0px));
+  right: 12px;
+  font-size: 22px;
+  line-height: 1;
+  padding: 10px;
+  z-index: 2;
+}
+
+/* ---------- 设置界面 ---------- */
+.settings-screen { justify-content: flex-start; }
+.setting-row {
+  width: 100%;
+  max-width: 430px;
+  background: var(--card);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 22px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.setting-label { font-size: 20px; font-weight: 800; }
+.setting-desc { font-size: 14px; color: var(--ink-soft); }
+.seg-group { display: flex; gap: 8px; margin-top: 10px; }
+.seg-btn {
+  flex: 1;
+  font: inherit;
+  font-size: 20px;
+  font-weight: 700;
+  padding: 12px 0;
+  border: 2px solid var(--line);
+  border-radius: 12px;
+  background: #fff;
+  color: var(--ink);
+  cursor: pointer;
+  transition: background .12s ease, border-color .12s ease, color .12s ease;
+}
+.seg-btn:active { transform: scale(.96); }
+.seg-btn.active { background: var(--primary); border-color: var(--primary); color: #fff; }
+.setting-value { margin-top: 8px; font-size: 16px; font-weight: 700; color: var(--ink-soft); }
 
 /* ---------- 选择界面 ---------- */
 .select-screen { justify-content: flex-start; }

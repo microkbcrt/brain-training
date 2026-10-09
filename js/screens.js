@@ -7,6 +7,7 @@ window.Brain = window.Brain || {};
   B.renderStart = function () {
     const node = B.htmlToNode(
       '<div class="screen start-screen">' +
+      '  <button class="btn btn-ghost gear-btn" id="settingsBtn" title="设置">⚙️</button>' +
       '  <div class="logo">' +
       '    <div class="logo-icon">🧠</div>' +
       '    <h1>脑锻炼</h1>' +
@@ -17,6 +18,48 @@ window.Brain = window.Brain || {};
     );
     node.querySelector('#startBtn').addEventListener('click', function () {
       B.goSelect();
+    });
+    node.querySelector('#settingsBtn').addEventListener('click', function () {
+      B.goSettings();
+    });
+    return node;
+  };
+
+  // ---------------- 设置界面 ----------------
+  B.renderSettings = function () {
+    const options = [0, 1, 2, 3, 4, 5].map(function (n) {
+      return '<button class="seg-btn' + (n === B.getCountdown() ? ' active' : '') +
+        '" data-secs="' + n + '">' + n + '</button>';
+    }).join('');
+
+    const node = B.htmlToNode(
+      '<div class="screen settings-screen">' +
+      '  <div class="topbar">' +
+      '    <button class="btn btn-ghost" id="backBtn">‹ 返回</button>' +
+      '    <h2>设置</h2>' +
+      '    <div class="spacer"></div>' +
+      '  </div>' +
+      '  <div class="setting-row">' +
+      '    <div class="setting-label">开始前倒计时</div>' +
+      '    <div class="setting-desc">每轮开始前的准备时间（秒）</div>' +
+      '    <div class="seg-group" id="cdGroup">' + options + '</div>' +
+      '    <div class="setting-value" id="cdValue">' + B.getCountdown() + ' 秒</div>' +
+      '</div>' +
+      '</div>'
+    );
+
+    node.querySelector('#backBtn').addEventListener('click', function () {
+      B.goStart();
+    });
+    node.querySelector('#cdGroup').addEventListener('click', function (e) {
+      const btn = e.target.closest('[data-secs]');
+      if (!btn) return;
+      const secs = parseInt(btn.dataset.secs, 10);
+      B.setCountdown(secs);
+      node.querySelectorAll('#cdGroup .seg-btn').forEach(function (b) {
+        b.classList.toggle('active', b === btn);
+      });
+      node.querySelector('#cdValue').textContent = secs + ' 秒';
     });
     return node;
   };

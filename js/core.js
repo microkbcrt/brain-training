@@ -52,4 +52,37 @@ window.Brain = window.Brain || {};
   B.formatTime = function (seconds) {
     return seconds.toFixed(2);
   };
+
+  // ---------- 设置（本地持久化） ----------
+  const SETTINGS_KEY = 'brain.settings';
+  B.settings = { countdown: 3 };   // 开始前的倒计时秒数：0-5
+
+  B.loadSettings = function () {
+    try {
+      const raw = localStorage.getItem(SETTINGS_KEY);
+      if (raw) {
+        const s = JSON.parse(raw);
+        if (typeof s.countdown === 'number') {
+          B.settings.countdown = Math.max(0, Math.min(5, Math.round(s.countdown)));
+        }
+      }
+    } catch (e) { /* 忽略（如 file:// 下 localStorage 不可用） */ }
+  };
+
+  B.saveSettings = function () {
+    try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(B.settings)); } catch (e) { /* 忽略 */ }
+  };
+
+  B.getCountdown = function () { return B.settings.countdown; };
+  B.setCountdown = function (secs) {
+    B.settings.countdown = Math.max(0, Math.min(5, Math.round(secs)));
+    B.saveSettings();
+  };
+
+  // 生成倒计时的秒序列（如 3 -> [3,2,1]；0 -> []），供各游戏统一使用
+  B.countdownSteps = function (secs) {
+    const out = [];
+    for (let v = secs; v >= 1; v--) out.push(v);
+    return out;
+  };
 })(window.Brain);
