@@ -14,6 +14,8 @@ window.Brain = window.Brain || {};
   };
 
   B.goSelect = function () {
+    // 进入选择界面就开始预热整个图片库，尽量在开始游戏前加载完
+    if (B.preloadPictureLibrary) B.preloadPictureLibrary();
     mount(B.renderSelect());
   };
 

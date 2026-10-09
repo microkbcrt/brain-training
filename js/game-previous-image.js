@@ -44,8 +44,6 @@ window.Brain = window.Brain || {};
   B.startPreviousImage = function (container, onFinish) {
     // ---- 图片池：优先必应每日一图，缺失时回退程序化图形 ----
     const pool = B.getPicturePool();
-    // 立即在后台预加载并解码全部图片（与倒计时并行）
-    const preload = B.preloadPictures(pool);
 
     let order = B.shuffle(pool);
     let orderIndex = 0;
@@ -106,17 +104,33 @@ window.Brain = window.Brain || {};
       container.innerHTML =
         '<div class="game-top"><span>准备</span><span></span></div>' +
         '<h2 class="game-title small">正在加载图片…</h2>' +
-        '<div class="pic-loading"><div class="pic-spinner"></div></div>';
+        '<div class="pic-loading"><div class="pic-spinner"></div>' +
+        '  <div class="pic-progress" id="picProgress"></div>' +
+        '</div>';
+      updateProgress();
+    }
+
+    function updateProgress() {
+      const el = container.querySelector('#picProgress');
+      if (!el) return;
+      const p = B.getPictureProgress();
+      el.textContent = p.total ? (p.done + ' / ' + p.total) : '';
     }
 
     function startGame() {
       container.className = 'screen game-screen';
-      // 必须等全部图片加载并解码完成，避免"按加载快慢猜答案"，也避免边玩边加载
+      // 开始前必须等整个图片库全部加载并解码完成，避免按加载快慢作弊、也避免边玩边加载
       let loaded = false;
-      const loadingTimer = setTimeout(function () { if (!loaded) showLoading(); }, 200);
-      preload.then(function () {
+      let progressTimer = null;
+      const loadingTimer = setTimeout(function () {
+        if (loaded) return;
+        showLoading();
+        progressTimer = setInterval(updateProgress, 100);
+      }, 120);
+      B.preloadPictureLibrary().then(function () {
         loaded = true;
         clearTimeout(loadingTimer);
+        if (progressTimer) clearInterval(progressTimer);
         startTime = performance.now();
         question = 0;
         cur = nextPic();

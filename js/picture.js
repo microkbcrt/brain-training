@@ -76,10 +76,12 @@ window.Brain = window.Brain || {};
   // 图片对象：kind='image'（本地必应图片）或 kind='shape'（程序化图形）
   // 全部通过 B.pictureHTML(pic, mirrored) 渲染
 
-  // 取图片库：优先使用预下载的必应每日一图，缺失时回退到程序化图形
+  // 取图片库：优先使用预下载的必应每日一图，缺失时回退到程序化图形。
+  // 结果做一次缓存，保证全 App 使用同一批图片对象。
   B.getPicturePool = function () {
+    if (B._pool) return B._pool;
     if (B.bingPictures && B.bingPictures.length) {
-      return B.bingPictures.map(function (p) {
+      B._pool = B.bingPictures.map(function (p) {
         return {
           id: 'bing-' + p.date,
           kind: 'image',
@@ -88,10 +90,12 @@ window.Brain = window.Brain || {};
           title: p.title
         };
       });
+    } else {
+      const pool = [];
+      for (let i = 0; i < 40; i++) pool.push(B.createPicture((Math.random() * 1e9) | 0));
+      B._pool = pool;
     }
-    const pool = [];
-    for (let i = 0; i < 40; i++) pool.push(B.createPicture((Math.random() * 1e9) | 0));
-    return pool;
+    return B._pool;
   };
 
   B.pictureHTML = function (pic, mirrored) {
@@ -102,18 +106,22 @@ window.Brain = window.Brain || {};
     return B.pictureToSVG(pic, mirrored);
   };
 
-  // 预加载并解码所有图片，返回 Promise；全部就绪后再进入游戏，
-  // 既能避免"按图片加载快慢猜答案"，也能避免边玩边加载的糟糕体验。
-  B.preloadPictures = function (pics, onProgress) {
-    const images = pics.filter(function (p) { return p.kind === 'image'; });
-    if (!images.length) return Promise.resolve();
-    let done = 0;
+  // 预加载并解码【整个图片库】（全 App 只做一次），返回 Promise。
+  // 游戏开始前会等待它完成，确保所有图片都已缓存/解码：
+  // 既避免"按图片加载快慢猜答案"，也避免边玩边加载。
+  B.preloadPictureLibrary = function () {
+    if (B._picPreload) return B._picPreload;
+    const images = B.getPicturePool().filter(function (p) { return p.kind === 'image'; });
+    B._picProgress = { done: 0, total: images.length };
+    if (!images.length) {
+      B._picPreload = Promise.resolve();
+      return B._picPreload;
+    }
     const tasks = images.map(function (pic) {
       return new Promise(function (resolve) {
         const img = new Image();
         function finish() {
-          done++;
-          if (onProgress) onProgress(done, images.length);
+          B._picProgress.done++;
           resolve();
         }
         img.onload = function () {
@@ -125,9 +133,27 @@ window.Brain = window.Brain || {};
       });
     });
     const all = Promise.all(tasks);
-    // 安全兜底：万一个别图片迟迟不完成，最多等 10 秒就继续，避免卡在加载页
-    const timeout = new Promise(function (resolve) { setTimeout(resolve, 10000); });
-    return Promise.race([all, timeout]);
+    // 仅在极端情况下（个别请求一直挂起）兜底，最多等 60 秒，避免永久卡住
+    const safety = new Promise(function (resolve) { setTimeout(resolve, 60000); });
+    B._picPreload = Promise.race([all, safety]);
+    return B._picPreload;
+  };
+
+  B.getPictureProgress = function () {
+    return B._picProgress || { done: 0, total: 0 };
+  };
+
+  // 兼容：旧接口，返回加载 Promise
+  B.preloadPictures = function (pics) {
+    const images = (pics || []).filter(function (p) { return p.kind === 'image'; });
+    return Promise.all(images.map(function (pic) {
+      return new Promise(function (resolve) {
+        const img = new Image();
+        img.onload = function () { img.decode ? img.decode().then(resolve, resolve) : resolve(); };
+        img.onerror = resolve;
+        img.src = pic.src;
+      });
+    }));
   };
 
   // 把图片渲染成 SVG 字符串，mirrored=true 时左右翻转
