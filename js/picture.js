@@ -76,6 +76,10 @@ window.Brain = window.Brain || {};
   // 图片对象：kind='image'（本地必应图片）或 kind='shape'（程序化图形）
   // 全部通过 B.pictureHTML(pic, mirrored) 渲染
 
+  // 图片加载源：优先走 GitHub 镜像（国内通常更快），失败回退到本站相对路径。
+  // 镜像格式：https://gh.jjj.gv.uy/https://raw.githubusercontent.com/<owner>/<repo>/<branch>/
+  const IMG_MIRROR = 'https://gh.jjj.gv.uy/https://raw.githubusercontent.com/microkbcrt/brain-training/main/';
+
   // 取图片库：优先使用预下载的必应每日一图，缺失时回退到程序化图形。
   // 结果做一次缓存，保证全 App 使用同一批图片对象。
   B.getPicturePool = function () {
@@ -85,7 +89,8 @@ window.Brain = window.Brain || {};
         return {
           id: 'bing-' + p.date,
           kind: 'image',
-          src: p.file,
+          src: IMG_MIRROR + p.file,   // 优先：镜像
+          fallback: p.file,           // 兜底：本站相对路径
           date: p.date,
           title: p.title
         };
@@ -100,11 +105,34 @@ window.Brain = window.Brain || {};
 
   B.pictureHTML = function (pic, mirrored) {
     if (pic.kind === 'image') {
+      const onerr = pic.fallback
+        ? ' onerror="this.onerror=null;this.src=\'' + pic.fallback + '\'"'
+        : '';
       return '<img class="pic-img' + (mirrored ? ' mirrored' : '') +
-        '" src="' + pic.src + '" alt="" draggable="false">';
+        '" src="' + pic.src + '"' + onerr + ' alt="" draggable="false">';
     }
     return B.pictureToSVG(pic, mirrored);
   };
+
+  // 加载单张图片（带兜底），resolve 时代表可用
+  function loadOneImage(pic) {
+    return new Promise(function (resolve) {
+      function finish() { resolve(); }
+      function attempt(src, isFallback) {
+        const img = new Image();
+        img.onload = function () {
+          if (img.decode) { img.decode().then(finish, finish); }
+          else finish();
+        };
+        img.onerror = function () {
+          if (!isFallback && pic.fallback) attempt(pic.fallback, true);
+          else finish();
+        };
+        img.src = src;
+      }
+      attempt(pic.src, false);
+    });
+  }
 
   // 预加载并解码【整个图片库】（全 App 只做一次），返回 Promise。
   // 游戏开始前会等待它完成，确保所有图片都已缓存/解码：
@@ -118,19 +146,7 @@ window.Brain = window.Brain || {};
       return B._picPreload;
     }
     const tasks = images.map(function (pic) {
-      return new Promise(function (resolve) {
-        const img = new Image();
-        function finish() {
-          B._picProgress.done++;
-          resolve();
-        }
-        img.onload = function () {
-          if (img.decode) { img.decode().then(finish, finish); }
-          else finish();
-        };
-        img.onerror = finish;
-        img.src = pic.src;
-      });
+      return loadOneImage(pic).then(function () { B._picProgress.done++; });
     });
     const all = Promise.all(tasks);
     // 仅在极端情况下（个别请求一直挂起）兜底，最多等 60 秒，避免永久卡住
@@ -146,14 +162,7 @@ window.Brain = window.Brain || {};
   // 兼容：旧接口，返回加载 Promise
   B.preloadPictures = function (pics) {
     const images = (pics || []).filter(function (p) { return p.kind === 'image'; });
-    return Promise.all(images.map(function (pic) {
-      return new Promise(function (resolve) {
-        const img = new Image();
-        img.onload = function () { img.decode ? img.decode().then(resolve, resolve) : resolve(); };
-        img.onerror = resolve;
-        img.src = pic.src;
-      });
-    }));
+    return Promise.all(images.map(loadOneImage));
   };
 
   // 把图片渲染成 SVG 字符串，mirrored=true 时左右翻转
