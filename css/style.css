@@ -34,6 +34,7 @@ body {
   max-width: 430px;
   height: 100vh;
   height: 100dvh;
+  height: 100svh;   /* 最小视口：不被安卓浏览器工具栏遮挡 */
   background: var(--bg);
   overflow: hidden;
   box-shadow: 0 0 60px rgba(31, 41, 55, 0.18);
@@ -146,7 +147,16 @@ body {
 @keyframes pop { 0% { transform: scale(.4); opacity: 0; } 60% { transform: scale(1.1); opacity: 1; } 100% { transform: scale(1); } }
 
 /* ---------- 游戏界面 ---------- */
-.game-screen { justify-content: flex-start; gap: 18px; padding-top: 28px; overflow-y: auto; }
+.game-screen {
+  justify-content: flex-start;
+  gap: 18px;
+  padding-top: 28px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+/* 子元素不压缩，内容超高时靠滚动，保证按钮不被挤没/挤出可点区域 */
+.game-screen > * { flex-shrink: 0; }
 .game-top {
   width: 100%;
   display: flex;
@@ -222,7 +232,7 @@ body {
 .option-btn.locked { pointer-events: none; }
 
 /* ---------- 数箱子 ---------- */
-.box-game { gap: 4px; padding-top: 14px; }
+.box-game { gap: 4px; padding: 14px 0 calc(30px + env(safe-area-inset-bottom, 0px)); }
 .box-game .game-title { font-size: 24px; }
 .box-count {
   min-height: 46px;
@@ -240,6 +250,18 @@ body {
   max-width: 330px;
   height: auto;
   touch-action: none;
+}
+/* 矮屏（部分安卓机）自动缩小画布，保证键盘和确定键有位置 */
+@media (max-height: 720px) {
+  .box-canvas { max-width: 264px; }
+  .box-game { gap: 2px; padding-top: 8px; }
+  .key { padding: 8px 0; font-size: 20px; }
+  .ppl-game { padding-top: 6px; }
+}
+@media (max-height: 600px) {
+  .box-canvas { max-width: 216px; }
+  .box-game .game-title { font-size: 20px; }
+  .key { padding: 6px 0; font-size: 19px; }
 }
 .box-controls {
   width: 100%;
@@ -275,7 +297,7 @@ body {
 .box-ok { width: 100%; padding: 13px 0; }
 
 /* ---------- 数小人 ---------- */
-.ppl-game { gap: 4px; padding: 10px 0 0; }
+.ppl-game { gap: 4px; padding: 10px 0 calc(30px + env(safe-area-inset-bottom, 0px)); }
 .ppl-game .game-title,
 .ppl-game .ppl-count { padding-left: 18px; padding-right: 18px; }
 .ppl-game .game-title { font-size: 22px; }

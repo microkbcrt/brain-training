@@ -29,7 +29,7 @@ window.Brain = window.Brain || {};
   const MAX_ROWS = 5;
 
   // 临时调试开关：true 时自动输入正确答案
-  const AUTO_PASS = true;
+  const AUTO_PASS = false;
 
   // 标准公共厕所男厕图标（头 + 躯干 + 微张双臂 + 双腿）
   const FIG_SVG =
