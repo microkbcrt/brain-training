@@ -172,6 +172,22 @@ body {
 .picture-frame img { object-fit: cover; }
 .pic-img { object-fit: cover; }
 .pic-img.mirrored { transform: scaleX(-1); }
+.pic-loading {
+  width: min(420px, 94%);
+  aspect-ratio: 16 / 9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.pic-spinner {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  border: 5px solid #e2e8f0;
+  border-top-color: var(--primary);
+  animation: spin .8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
 
 .game-actions { display: flex; flex-direction: column; align-items: center; gap: 12px; width: 100%; }
 .choice-prompt { font-size: 17px; font-weight: 700; color: var(--ink); }

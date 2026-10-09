@@ -44,7 +44,8 @@ window.Brain = window.Brain || {};
   B.startPreviousImage = function (container, onFinish) {
     // ---- 图片池：优先必应每日一图，缺失时回退程序化图形 ----
     const pool = B.getPicturePool();
-    B.preloadPictures(pool);
+    // 立即在后台预加载并解码全部图片（与倒计时并行）
+    const preload = B.preloadPictures(pool);
 
     let order = B.shuffle(pool);
     let orderIndex = 0;
@@ -98,12 +99,27 @@ window.Brain = window.Brain || {};
       later(tick, 1000);
     }
 
+    function showLoading() {
+      container.className = 'screen game-screen';
+      container.innerHTML =
+        '<div class="game-top"><span>准备</span><span></span></div>' +
+        '<h2 class="game-title small">正在加载图片…</h2>' +
+        '<div class="pic-loading"><div class="pic-spinner"></div></div>';
+    }
+
     function startGame() {
       container.className = 'screen game-screen';
-      startTime = performance.now();
-      question = 0;
-      cur = nextPic();
-      renderMemorize();
+      // 必须等全部图片加载并解码完成，避免"按加载快慢猜答案"，也避免边玩边加载
+      let loaded = false;
+      const loadingTimer = setTimeout(function () { if (!loaded) showLoading(); }, 200);
+      preload.then(function () {
+        loaded = true;
+        clearTimeout(loadingTimer);
+        startTime = performance.now();
+        question = 0;
+        cur = nextPic();
+        renderMemorize();
+      });
     }
 
     // ---- 记忆页：请记住 + 图片 + 记住了 ----

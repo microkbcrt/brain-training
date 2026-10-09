@@ -102,13 +102,32 @@ window.Brain = window.Brain || {};
     return B.pictureToSVG(pic, mirrored);
   };
 
-  B.preloadPictures = function (pics) {
-    pics.forEach(function (pic) {
-      if (pic.kind === 'image') {
+  // 预加载并解码所有图片，返回 Promise；全部就绪后再进入游戏，
+  // 既能避免"按图片加载快慢猜答案"，也能避免边玩边加载的糟糕体验。
+  B.preloadPictures = function (pics, onProgress) {
+    const images = pics.filter(function (p) { return p.kind === 'image'; });
+    if (!images.length) return Promise.resolve();
+    let done = 0;
+    const tasks = images.map(function (pic) {
+      return new Promise(function (resolve) {
         const img = new Image();
+        function finish() {
+          done++;
+          if (onProgress) onProgress(done, images.length);
+          resolve();
+        }
+        img.onload = function () {
+          if (img.decode) { img.decode().then(finish, finish); }
+          else finish();
+        };
+        img.onerror = finish;
         img.src = pic.src;
-      }
+      });
     });
+    const all = Promise.all(tasks);
+    // 安全兜底：万一个别图片迟迟不完成，最多等 10 秒就继续，避免卡在加载页
+    const timeout = new Promise(function (resolve) { setTimeout(resolve, 10000); });
+    return Promise.race([all, timeout]);
   };
 
   // 把图片渲染成 SVG 字符串，mirrored=true 时左右翻转
